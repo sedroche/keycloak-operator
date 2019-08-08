@@ -179,13 +179,17 @@ func (ph *phaseHandler) reconcileUsers(kcClient keycloak.KeycloakInterface, real
 	}
 	errors := util.NewMultiError()
 	for i := range userPairsList {
-		errors.AddError(ph.reconcileUser(userPairsList[i].KcUser, userPairsList[i].SpecUser, realm.Spec.Realm, realm.Spec.CreateOnly, kcClient, ns))
+		errors.AddError(ph.reconcileUser(userPairsList[i].KcUser, userPairsList[i].SpecUser, realm.Spec.Realm, realm.Spec.CreateOnly, realm.Spec.DeleteUsers, kcClient, ns))
 	}
 	return errors
 }
 
-func (ph *phaseHandler) reconcileUser(kcUser, specUser *v1alpha1.KeycloakUser, realmName string, createOnly bool, authenticatedClient keycloak.KeycloakInterface, ns string) error {
+func (ph *phaseHandler) reconcileUser(kcUser, specUser *v1alpha1.KeycloakUser, realmName string, createOnly bool, deleteUsers bool, authenticatedClient keycloak.KeycloakInterface, ns string) error {
 	if specUser == nil {
+		if !createOnly && deleteUsers {
+			return authenticatedClient.DeleteUser(kcUser.ID, realmName)
+		}
+
 		return nil
 	}
 	if kcUser == nil {
